@@ -19,7 +19,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	processes[1].God <- &Force{Election: &true}
+	processes[1].God <- &Force{Election: &True}
 	fmt.Fprintf(w, "Forcing an election")
 }
 
