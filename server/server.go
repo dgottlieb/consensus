@@ -20,8 +20,14 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	r.ParseForm()
-	for key := range r.Form {
+	if err := r.ParseForm(); err != nil {
+		http.Error(
+			w,
+			fmt.Sprintf("Error parsing election form. Err: %v", err),
+			http.StatusInternalServerError,
+		)
+	}
+	for key := range r.Form { // should only iterate once
 		processId, _ := strconv.ParseInt(key, 10, 0)
 		processes[processId].God <- &Force{Election: &True}
 		fmt.Fprintf(w, "Process %d forcing an election", processId)
