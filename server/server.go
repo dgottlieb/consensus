@@ -1,13 +1,13 @@
-package main
+package server
 
 import (
-	"net/http"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/url"
 )
 
-func rootHandler(w http.ResponseWriter, r *http.Request) {
+func RootHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl, err := template.ParseFiles("templates/root.html")
 	if err != nil {
 		fmt.Printf("Error parsing template")
@@ -15,11 +15,11 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-func electionHandler(w http.ResponseWriter, r *http.Request) {
+func ElectionHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "Forcing election")
 }
 
-func lagHandler(w http.ResponseWriter, r *http.Request) {
+func LagHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := template.ParseFiles("templates/lag.html"); err != nil {
 		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
 	} else {
@@ -31,7 +31,7 @@ func lagHandler(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			http.Error(w, "Unable to get form values", http.StatusInternalServerError)
 		}
-	//	t.Execute(w, userInput)
+		//	t.Execute(w, userInput)
 		fmt.Fprintf(w, "Adding %s lag", lag)
 	}
 }
@@ -47,5 +47,3 @@ func getFormValues(form *url.Values) (lag string, err error) {
 	}
 	return "", fmt.Errorf("No form values")
 }
-
-
