@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-func RootHandler(w http.ResponseWriter, r *http.Request) {
+func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 	tmpl, err := template.ParseFiles("templates/root.html")
 	if err != nil {
 		fmt.Printf("Error parsing template")
@@ -15,8 +15,9 @@ func RootHandler(w http.ResponseWriter, r *http.Request) {
 	tmpl.Execute(w, nil)
 }
 
-func ElectionHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Forcing election")
+func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
+     	processes[1].God <- &Force{Election: true}
+	fmt.Fprintf(w, "Forcing an election")
 }
 
 func LagHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +41,8 @@ func getFormValues(form *url.Values) (lag string, err error) {
 	for key, value := range *form {
 		switch key {
 		case "lag":
+			return value[0], nil
+		case "processId":
 			return value[0], nil
 		default:
 			return "", fmt.Errorf("Unable to parse form")

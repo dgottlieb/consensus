@@ -242,8 +242,12 @@ func Play() {
 
 	go Mailbox(processes, mailbox)
 
-	http.HandleFunc("/", RootHandler)
-	http.HandleFunc("/election", ElectionHandler)
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		RootHandler(w, r, processes)
+	})
+	http.HandleFunc("/election", func(w http.ResponseWriter, r *http.Request) {
+		ElectionHandler(w, r, processes)
+	})
 	http.HandleFunc("/lag", LagHandler)
 	http.ListenAndServe(":8080", nil)
 }
