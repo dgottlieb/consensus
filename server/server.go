@@ -26,10 +26,6 @@ func LagHandler(w http.ResponseWriter, r *http.Request) {
 	if _, err := template.ParseFiles("templates/lag.html"); err != nil {
 		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
 	} else {
-		if err := r.ParseForm(); err != nil {
-			http.Error(w, "Error parsing lag", http.StatusInternalServerError)
-			return
-		}
 		fmt.Fprintf(w, "Adding lag")
 	}
 }
