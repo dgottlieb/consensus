@@ -12,11 +12,14 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 	if err != nil {
 		fmt.Printf("Error parsing template")
 	}
-	tmpl.Execute(w, nil)
+	if err := tmpl.Execute(w, processes); err != nil {
+		fmt.Printf(err.Error())
+		panic(err)
+	}
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-     	processes[1].God <- &Force{Election: true}
+	processes[1].God <- &Force{Election: &true}
 	fmt.Fprintf(w, "Forcing an election")
 }
 

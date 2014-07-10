@@ -3,35 +3,34 @@
   <title>Go Template Examples</title>
   <script>
     window.addEventListener("load", function () {
-      var submitter = document.getElementById("addLag");
-      submitter.addEventListener("click", function() {
-        var form = document.getElementById("lag");
-        form.submit();
+      var process = document.getElementById("process");
+      process.addEventListener("click", function() {
+        var button = document.getElementById("addLag");
+        button.submit();
       });
-      var forceElection = document.getElementById("forceElection");
-      forceElection.addEventListener("click", function() {
-        var form = document.getElementById("election");
-        form.submit();
+      process.addEventListener("click", function() {
+        var button = document.getElementById("election");
+        button.submit();
       }
     });
     </script>
   <style>
-    background: #808080 
+
+    input { margin: 0; }
     </style>
 </head>
 <body>
-  <form id="lag" method="POST" action="/lag">
-     <label>
-       Process Id: <input name="processId" type="number">
-     </label>
-     <label>
-       Add lag: <input name="lag" type="number">
-    </label>
+<div>
+{{range .}}
+   Process Id: {{.Id}}
+   Current Epoch: {{.CurrentEpoch}}
+   <form id="lag" method="POST" action="/lag">
     <button id="addLag">Add lag</button>
-    </br>
   </form>
   <form id="election" method="POST" action="/election">
     <button id="forceElection">Force election</button>
   </form>
+  </div>
+{{end}}
 </body>
 </html>
