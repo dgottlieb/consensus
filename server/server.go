@@ -20,11 +20,21 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	processes[1].God <- &Force{Election: &True}
-	fmt.Fprintf(w, "Forcing an election")
+	if err := r.ParseForm(); err != nil {
+		http.Error(
+			w,
+			fmt.Sprintf("Error parsing election form. Err: %v", err),
+			http.StatusInternalServerError,
+		)
+	}
+	for key := range r.Form { // should only iterate once
+		processId, _ := strconv.Atoi(key)
+		processes[processId].God <- &Force{Election: &True}
+		fmt.Fprintf(w, "Process %d forcing an election", processId)
+	}
 }
 
-func LagHandler(w http.ResponseWriter, r *http.Request) {
+func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 	if _, err := template.ParseFiles("templates/lag.html"); err != nil {
 		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
 	} else {
