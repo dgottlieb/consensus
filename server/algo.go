@@ -7,8 +7,19 @@ import (
 	"time"
 )
 
+var True = true
+var False = false
+
 const NumProcesses = 3
 const NumMessages = 100
+
+type NetworkState struct {
+	Lag time.Duration
+
+	// int between 0 and 100 representing a percentage. 0 drops no
+	// packets, 100 drops all packets
+	Packetloss int
+}
 
 type Message struct {
 	Message        string
@@ -17,10 +28,14 @@ type Message struct {
 	ProcessEpoch   int
 	Frequency      int
 	FrequencyEpoch int
+	NetworkState   NetworkState
 }
 
 type Force struct {
-	Election bool
+	// All nil values represent properties that should be left alone
+	Election   *bool
+	Lag        *time.Duration
+	Packetloss *int // See `NetworkState.Packetloss`
 }
 
 type Process struct {
@@ -36,6 +51,7 @@ type Process struct {
 	God            chan *Force
 	Ticker         *time.Ticker
 	ElectionForced bool
+	NetworkState   *NetworkState
 }
 
 type Election struct {
@@ -62,6 +78,7 @@ func NewProcess(id int, mailbox chan *Message) *Process {
 		Outbox:         mailbox,
 		God:            make(chan *Force, 1),
 		Ticker:         time.NewTicker(5 * time.Second),
+		NetworkState:   &NetworkState{Lag: time.Duration(0), Packetloss: 0},
 	}
 }
 
@@ -97,7 +114,9 @@ func (process *Process) Iterate() {
 		process.SendUpdate(int(rand.Int31n(NumProcesses)))
 	case force := <-process.God:
 		fmt.Printf("Process #%d Force: %#v\n", process.Id, force)
-		process.ElectionForced = force.Election
+		if force.Election != nil {
+			process.ElectionForced = *force.Election
+		}
 	}
 }
 
@@ -140,6 +159,7 @@ func (process *Process) HandleMessage(message *Message) {
 			ProcessEpoch: process.CurrentEpoch,
 			From:         process.Id,
 			To:           message.From,
+			NetworkState: *process.NetworkState,
 		}
 		process.Outbox <- message
 	case "you_have_my_vote":
@@ -169,6 +189,7 @@ func (process *Process) SendUpdate(toProcessId int) {
 		Frequency:      process.Frequency,
 		FrequencyEpoch: process.FrequencyEpoch,
 		Message:        "heartbeat",
+		NetworkState:   *process.NetworkState,
 	}
 
 	process.Outbox <- message
@@ -209,6 +230,7 @@ func (process *Process) ElectMe() {
 			FrequencyEpoch: process.FrequencyEpoch,
 			From:           process.Id,
 			To:             peerId,
+			NetworkState:   *process.NetworkState,
 		}
 
 		process.Outbox <- message
@@ -218,6 +240,19 @@ func (process *Process) ElectMe() {
 func Mailbox(processes []*Process, mailbox chan *Message) {
 	for messageNum := 0; messageNum < NumMessages; messageNum++ {
 		message := <-mailbox
+		if rand.Intn(100) < message.NetworkState.Packetloss {
+			fmt.Printf("Dropped message: %#v\n", message)
+			continue
+		}
+
+		if message.NetworkState.Lag > time.Duration(0) {
+			go func(lag time.Duration) {
+				<-time.After(lag)
+				processes[message.To].Inbox <- message
+			}(message.NetworkState.Lag)
+			continue
+		}
+
 		fmt.Printf("Mailbox: %#v\n", message)
 		processes[message.To].Inbox <- message
 	}
@@ -234,10 +269,12 @@ func Play() {
 		process.Spawn()
 	}
 
+	processes[2].NetworkState.Packetloss = 100
+
 	go func() {
 		time.Sleep(5 * time.Second)
 		fmt.Println("Forcing an election")
-		processes[1].God <- &Force{Election: true}
+		processes[1].God <- &Force{Election: &True}
 	}()
 
 	go Mailbox(processes, mailbox)
