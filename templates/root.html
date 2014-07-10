@@ -28,9 +28,13 @@
 <body>
 <div>
 {{range .}}
-   Process Id: {{.Id}}
-   Current Epoch: {{.CurrentEpoch}}
-   <form id="lag" method="POST" action="/lag">
+   Process Id: {{.Id}}<br>
+   Current Epoch: {{.CurrentEpoch}}<br>
+   Frequency: {{.Frequency}}<br>
+   Frequency Epoch: {{.FrequencyEpoch}}<br>
+   Last Vote Epoch: {{.LastVoteEpoch}}<br>
+   Next Election: {{.NextElection.Format "2006-01-02 3:04"}}<br>
+      <form id="lag" method="POST" action="/lag">
     <button name="{{.Id}}" id="submit">Add lag</button>
   </form>
   <form id="election" method="POST" action="/election">
