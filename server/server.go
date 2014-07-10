@@ -102,3 +102,20 @@ func NetworkSplitHandler(writer http.ResponseWriter, request *http.Request, proc
 		}
 	}
 }
+
+func DisplayElectionHistory(writer http.ResponseWriter, request *http.Request) {
+	template, err := template.ParseFiles("templates/history.html")
+	if err != nil {
+		panic(err)
+	}
+
+	electionId, err := strconv.Atoi(request.FormValue("id"))
+	if err != nil {
+		panic(err)
+	}
+
+	history := elections[electionId]
+	if err := template.Execute(writer, history); err != nil {
+		panic(err)
+	}
+}
