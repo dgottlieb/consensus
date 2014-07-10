@@ -20,14 +20,12 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	processes[1].God <- &Force{Election: &True}
 	r.ParseForm()
-	fmt.Println(r.Form)
-	for key, _ := range r.Form {
-		fmt.Println(key)
+	for key := range r.Form {
+		processId, _ := strconv.ParseInt(key, 10, 0)
+		processes[processId].God <- &Force{Election: &True}
+		fmt.Fprintf(w, "Process %d forcing an election", processId)
 	}
-	fmt.Println(r.FormValue("0"))
-	fmt.Fprintf(w, "Forcing an election")
 }
 
 func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
