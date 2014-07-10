@@ -3,15 +3,21 @@
   <title>Go Template Examples</title>
   <script>
     window.addEventListener("load", function () {
-      var process = document.getElementById("process");
-      process.addEventListener("click", function() {
+      var addLag = document.getElementById("lag");
+      addLag.addEventListener("click", function() {
         var button = document.getElementById("addLag");
         button.submit();
       });
-      process.addEventListener("click", function() {
+      var forceElection = document.getElementById("election");
+      forceElection.addEventListener("click", function() {
         var button = document.getElementById("election");
         button.submit();
-      }
+      })
+      var splitNetwork = document.getElementById("split");
+      splitNetwork.addEventListener("click", function() {
+        var button = document.getElementById("splitNetwork");
+        button.submit();
+      })
     });
     </script>
   <style>
@@ -25,12 +31,23 @@
    Process Id: {{.Id}}
    Current Epoch: {{.CurrentEpoch}}
    <form id="lag" method="POST" action="/lag">
-    <input name="{{.Id}}" type="submit" value="Add lag" style="width:100px; height:100px;"></label>
+    <input name="{{.Id}}" type="submit" value="Add lag" style="width:100px; height:100px;">
   </form>
   <form id="election" method="POST" action="/election">
-    <input name="{{.Id}}" type="submit" value="Force election" style="width:100px; height:100px;"></label><br>
+    <input name="{{.Id}}" type="submit" value="Force election" style="width:100px; height:100px;">
   </form>
   </div>
 {{end}}
+  <form id="split" method="POST" action="/network_split">
+    <label for="left">Left:
+      <input name="left" type="text" value="">
+    </label>
+    <br>
+    <label for="right">Right:
+      <input name="right" type="text" value="">
+    </label>
+    <br>
+    <button id="splitNetwork">Split</button>
+  </form>
 </body>
 </html>

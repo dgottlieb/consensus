@@ -28,7 +28,7 @@ func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Proces
 		)
 	}
 	for key := range r.Form { // should only iterate once
-		processId, _ := strconv.ParseInt(key, 10, 0)
+		processId, _ := strconv.Atoi(key)
 		processes[processId].God <- &Force{Election: &True}
 		fmt.Fprintf(w, "Process %d forcing an election", processId)
 	}
