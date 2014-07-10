@@ -5,12 +5,12 @@
     window.addEventListener("load", function () {
       var addLag = document.getElementById("lag");
       addLag.addEventListener("click", function() {
-        var button = document.getElementById("addLag");
+        var button = document.getElementById("submit");
         button.submit();
       });
       var forceElection = document.getElementById("election");
       forceElection.addEventListener("click", function() {
-        var button = document.getElementById("election");
+        var button = document.getElementById("submit");
         button.submit();
       })
       var splitNetwork = document.getElementById("split");
@@ -31,10 +31,10 @@
    Process Id: {{.Id}}
    Current Epoch: {{.CurrentEpoch}}
    <form id="lag" method="POST" action="/lag">
-    <input name="{{.Id}}" type="submit" value="Add lag" style="width:100px; height:100px;">
+    <button name="{{.Id}}" id="submit">Add lag</button>
   </form>
   <form id="election" method="POST" action="/election">
-    <input name="{{.Id}}" type="submit" value="Force election" style="width:100px; height:100px;">
+    <button name="{{.Id}}" id="submit">Force election</button>
   </form>
   </div>
 {{end}}
