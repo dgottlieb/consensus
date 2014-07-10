@@ -298,6 +298,8 @@ func Play() {
 	http.HandleFunc("/election", func(w http.ResponseWriter, r *http.Request) {
 		ElectionHandler(w, r, processes)
 	})
-	http.HandleFunc("/lag", LagHandler)
+	http.HandleFunc("/lag", func(w http.ResponseWriter, r *http.Request) {
+		LagHandler(w, r, processes)
+	})
 	http.ListenAndServe(":8080", nil)
 }

@@ -25,10 +25,11 @@
    Process Id: {{.Id}}
    Current Epoch: {{.CurrentEpoch}}
    <form id="lag" method="POST" action="/lag">
-    <button id="addLag">Add lag</button>
+    <button id="addLag" value="{{.Id}}">Add lag</button>
   </form>
   <form id="election" method="POST" action="/election">
-    <button id="forceElection">Force election</button>
+    <input name="{{.Id}}" type="submit" value="Force election"></label><br>
+    <button id="forceElection" value="{{.Id}}">Force election</button>
   </form>
   </div>
 {{end}}
