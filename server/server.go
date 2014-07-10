@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
-	"net/url"
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
@@ -31,25 +30,6 @@ func LagHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Error parsing lag", http.StatusInternalServerError)
 			return
 		}
-		lag, err := getFormValues(&r.Form)
-		if err != nil {
-			http.Error(w, "Unable to get form values", http.StatusInternalServerError)
-		}
-		//	t.Execute(w, userInput)
-		fmt.Fprintf(w, "Adding %s lag", lag)
+		fmt.Fprintf(w, "Adding lag")
 	}
-}
-
-func getFormValues(form *url.Values) (lag string, err error) {
-	for key, value := range *form {
-		switch key {
-		case "lag":
-			return value[0], nil
-		case "processId":
-			return value[0], nil
-		default:
-			return "", fmt.Errorf("Unable to parse form")
-		}
-	}
-	return "", fmt.Errorf("No form values")
 }
