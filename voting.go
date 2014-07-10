@@ -243,4 +243,8 @@ func main() {
 	}()
 
 	Mailbox(processes, mailbox)
+	http.HandleFunc("/", rootHandler)
+	http.HandleFunc("/election", electionHandler)
+	http.HandleFunc("/lag", lagHandler)
+	http.ListenAndServe(":8080", nil)
 }
