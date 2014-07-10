@@ -13,14 +13,6 @@ var False = false
 const NumProcesses = 3
 const NumMessages = 100
 
-type NetworkState struct {
-	Lag time.Duration
-
-	// int between 0 and 100 representing a percentage. 0 drops no
-	// packets, 100 drops all packets
-	Packetloss int
-}
-
 type Message struct {
 	Message        string
 	From           int
@@ -28,7 +20,8 @@ type Message struct {
 	ProcessEpoch   int
 	Frequency      int
 	FrequencyEpoch int
-	NetworkState   NetworkState
+	Lag            time.Duration
+	Packetloss     int
 }
 
 type Force struct {
@@ -61,6 +54,29 @@ type Election struct {
 	NumProcesses   int
 }
 
+type NetworkState struct {
+	Lag []time.Duration
+
+	// int between 0 and 100 representing a percentage. 0 drops no
+	// packets, 100 drops all packets
+	Packetloss []int
+}
+
+func NewHealthyNetwork(numProcesses int) *NetworkState {
+	return &NetworkState{
+		Lag:        make([]time.Duration, numProcesses),
+		Packetloss: make([]int, numProcesses),
+	}
+}
+
+func (network *NetworkState) LagTo(peerId int) time.Duration {
+	return network.Lag[peerId]
+}
+
+func (network *NetworkState) PacketlossTo(peerId int) int {
+	return network.Packetloss[peerId]
+}
+
 func NewProcess(id int, mailbox chan *Message) *Process {
 	var nextElectionSeed time.Duration
 	if id > 0 {
@@ -78,7 +94,7 @@ func NewProcess(id int, mailbox chan *Message) *Process {
 		Outbox:         mailbox,
 		God:            make(chan *Force, 1),
 		Ticker:         time.NewTicker(5 * time.Second),
-		NetworkState:   &NetworkState{Lag: time.Duration(0), Packetloss: 0},
+		NetworkState:   NewHealthyNetwork(NumProcesses),
 	}
 }
 
@@ -154,13 +170,10 @@ func (process *Process) HandleMessage(message *Message) {
 		fmt.Printf("You have my vote. Process %v Frequency: %v Epoch: %v\n",
 			process.Id, message.Frequency, message.ProcessEpoch)
 		process.LastVoteEpoch = process.CurrentEpoch
-		message := &Message{
-			Message:      "you_have_my_vote",
-			ProcessEpoch: process.CurrentEpoch,
-			From:         process.Id,
-			To:           message.From,
-			NetworkState: *process.NetworkState,
-		}
+		message := process.NewMessage(message.From)
+		message.Message = "you_have_my_vote"
+		message.ProcessEpoch = process.CurrentEpoch
+
 		process.Outbox <- message
 	case "you_have_my_vote":
 		if message.ProcessEpoch < process.CurrentEpoch {
@@ -182,15 +195,11 @@ func (process *Process) HandleMessage(message *Message) {
 }
 
 func (process *Process) SendUpdate(toProcessId int) {
-	message := &Message{
-		From:           process.Id,
-		To:             toProcessId,
-		ProcessEpoch:   process.CurrentEpoch,
-		Frequency:      process.Frequency,
-		FrequencyEpoch: process.FrequencyEpoch,
-		Message:        "heartbeat",
-		NetworkState:   *process.NetworkState,
-	}
+	message := process.NewMessage(toProcessId)
+	message.ProcessEpoch = process.CurrentEpoch
+	message.Frequency = process.Frequency
+	message.FrequencyEpoch = process.FrequencyEpoch
+	message.Message = "heartbeat"
 
 	process.Outbox <- message
 }
@@ -223,33 +232,39 @@ func (process *Process) ElectMe() {
 			continue
 		}
 
-		message := &Message{
-			Message:        "elect_me",
-			ProcessEpoch:   process.CurrentEpoch,
-			Frequency:      process.Election.NewFrequency,
-			FrequencyEpoch: process.FrequencyEpoch,
-			From:           process.Id,
-			To:             peerId,
-			NetworkState:   *process.NetworkState,
-		}
+		message := process.NewMessage(peerId)
+		message.Message = "elect_me"
+		message.ProcessEpoch = process.CurrentEpoch
+		message.Frequency = process.Election.NewFrequency
+		message.FrequencyEpoch = process.FrequencyEpoch
 
 		process.Outbox <- message
+	}
+}
+
+func (process *Process) NewMessage(recipientId int) *Message {
+	return &Message{
+		ProcessEpoch: process.CurrentEpoch,
+		From:         process.Id,
+		To:           recipientId,
+		Lag:          process.NetworkState.LagTo(recipientId),
+		Packetloss:   process.NetworkState.PacketlossTo(recipientId),
 	}
 }
 
 func Mailbox(processes []*Process, mailbox chan *Message) {
 	for messageNum := 0; messageNum < NumMessages; messageNum++ {
 		message := <-mailbox
-		if rand.Intn(100) < message.NetworkState.Packetloss {
+		if rand.Intn(100) < message.Packetloss {
 			fmt.Printf("Dropped message: %#v\n", message)
 			continue
 		}
 
-		if message.NetworkState.Lag > time.Duration(0) {
+		if message.Lag > time.Duration(0) {
 			go func(lag time.Duration) {
 				<-time.After(lag)
 				processes[message.To].Inbox <- message
-			}(message.NetworkState.Lag)
+			}(message.Lag)
 			continue
 		}
 
@@ -268,8 +283,6 @@ func Play() {
 	for _, process := range processes {
 		process.Spawn()
 	}
-
-	processes[2].NetworkState.Packetloss = 100
 
 	go func() {
 		time.Sleep(5 * time.Second)
