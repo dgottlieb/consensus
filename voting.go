@@ -1,10 +1,11 @@
 package main
 
 import (
-	server "./server"
 	"math/rand"
 	"runtime"
 	"time"
+
+	server "./server"
 )
 
 func main() {
