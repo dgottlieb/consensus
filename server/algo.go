@@ -301,5 +301,8 @@ func Play() {
 	http.HandleFunc("/lag", func(w http.ResponseWriter, r *http.Request) {
 		LagHandler(w, r, processes)
 	})
+	http.HandleFunc("/network_split", func(writer http.ResponseWriter, request *http.Request) {
+		NetworkSplitHandler(writer, request, processes)
+	})
 	http.ListenAndServe(":8080", nil)
 }
