@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<head>
+  <title>Go Template Examples</title>
+  <script>
+    window.addEventListener("load", function () {
+      var submitter = document.getElementById("submit");
+      submitter.addEventListener("click", function() {
+        var form = document.getElementById("boop");
+        form.submit();
+      });
+      var forceElection = document.getElementById("forceElection");
+      forceElection.addEventListener("click", function() {
+        var form = document.getElementById("election");
+        form.submit();
+      }
+    });
+    </script>
+  <style>
+    background: #808080 
+    </style>
+</head>
+<body>
+  <form id="boop" method="POST" action="/lag">
+     <label for="style">
+       Add lag: <input name="lag" type="text" value="">
+    </label>
+    </br>
+  </form>
+  <form id="election" method="POST" action="/election">
+    <button id="forceElection">Force election</button>
+  </form>
+</body>
+</html>
