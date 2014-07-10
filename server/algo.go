@@ -20,6 +20,7 @@ type Message struct {
 	ProcessEpoch   int
 	Frequency      int
 	FrequencyEpoch int
+	ElectionId     int
 	Lag            time.Duration
 	Packetloss     int
 }
@@ -48,6 +49,7 @@ type Process struct {
 }
 
 type Election struct {
+	Id             int
 	NewFrequency   int
 	FrequencyEpoch int
 	NumVotes       int
@@ -155,9 +157,13 @@ func (process *Process) HandleMessage(message *Message) {
 		fmt.Printf("Updating from heartbeat. Process: %v New Frequency: %v New Epoch: %v\n",
 			process.Id, process.Frequency, process.FrequencyEpoch)
 	case "elect_me":
+		history := elections[message.ElectionId]
+
 		if process.CurrentEpoch > message.ProcessEpoch ||
 			process.LastVoteEpoch >= process.CurrentEpoch ||
 			process.FrequencyEpoch > message.FrequencyEpoch {
+
+			history.ReceivedUnsuccessful(message, process)
 			// Do not vote if: I have a more recent view of time than
 			// the message, or I already voted for this epoch, or my
 			// last observed frequency change is more recent than the
@@ -167,30 +173,38 @@ func (process *Process) HandleMessage(message *Message) {
 			return
 		}
 
+		history.ReceivedSuccessful(message, process)
 		fmt.Printf("You have my vote. Process %v Frequency: %v Epoch: %v\n",
 			process.Id, message.Frequency, message.ProcessEpoch)
 		process.LastVoteEpoch = process.CurrentEpoch
-		message := process.NewMessage(message.From)
-		message.Message = "you_have_my_vote"
-		message.ProcessEpoch = process.CurrentEpoch
 
-		process.Outbox <- message
+		response := process.NewMessage(message.From)
+		response.Message = "you_have_my_vote"
+		response.ProcessEpoch = process.CurrentEpoch
+		response.ElectionId = message.ElectionId
+
+		history.Sent(response)
+		process.Outbox <- response
 	case "you_have_my_vote":
+		history := elections[message.ElectionId]
 		if message.ProcessEpoch < process.CurrentEpoch {
+			history.ReceivedUnsuccessful(message, process)
 			return
 		}
 
+		history.ReceivedSuccessful(message, process)
 		fmt.Printf("Received vote. Process: %v Frequency: %v Epoch: %v\n",
 			process.Id, process.Election.NewFrequency, process.Election.FrequencyEpoch)
 		process.Election.NumVotes++
 		if process.Election.NumVotes*2 > process.Election.NumProcesses {
+			history.Successful = true
 			fmt.Println("New frequency elected.")
 			process.Frequency = process.Election.NewFrequency
 			process.FrequencyEpoch = process.Election.FrequencyEpoch
 			process.PropagateFrequency()
 		}
 	default:
-		fmt.Printf("Process #%d Message received: %v\n", process.Id, message)
+		panic(fmt.Sprintf("Unknown message: %#v", message))
 	}
 }
 
@@ -227,6 +241,7 @@ func (process *Process) ElectMe() {
 	fmt.Printf("Sending elect_me. Process: %v Election: %#v\n",
 		process.Id, process.Election)
 
+	electionHistory := NewElection(process.Id, process.Election.NewFrequency)
 	for peerId := 0; peerId < NumProcesses; peerId++ {
 		if process.Id == peerId {
 			continue
@@ -237,6 +252,7 @@ func (process *Process) ElectMe() {
 		message.ProcessEpoch = process.CurrentEpoch
 		message.Frequency = process.Election.NewFrequency
 		message.FrequencyEpoch = process.FrequencyEpoch
+		electionHistory.Sent(message)
 
 		process.Outbox <- message
 	}
@@ -268,7 +284,10 @@ func Mailbox(processes []*Process, mailbox chan *Message) {
 			continue
 		}
 
-		fmt.Printf("Mailbox: %#v\n", message)
+		if message.Message != "heartbeat" {
+			fmt.Printf("Mailbox: %#v\n", message)
+		}
+
 		processes[message.To].Inbox <- message
 	}
 }
