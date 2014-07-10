@@ -299,5 +299,8 @@ func Play() {
 		ElectionHandler(w, r, processes)
 	})
 	http.HandleFunc("/lag", LagHandler)
+	http.HandleFunc("/network_split", func(writer http.ResponseWriter, request *http.Request) {
+		NetworkSplitHandler(writer, request, processes)
+	})
 	http.ListenAndServe(":8080", nil)
 }
