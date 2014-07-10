@@ -1,8 +1,10 @@
 package main
 
 import (
+	server "./server"
 	"fmt"
 	"math/rand"
+	"net/http"
 	"runtime"
 	"time"
 )
@@ -242,9 +244,11 @@ func main() {
 		processes[1].God <- &Force{Election: true}
 	}()
 
-	Mailbox(processes, mailbox)
-	http.HandleFunc("/", rootHandler)
-	http.HandleFunc("/election", electionHandler)
-	http.HandleFunc("/lag", lagHandler)
+	go Mailbox(processes, mailbox)
+
+	http.HandleFunc("/", server.RootHandler)
+	http.HandleFunc("/election", server.ElectionHandler)
+	http.HandleFunc("/lag", server.LagHandler)
 	http.ListenAndServe(":8080", nil)
+
 }
