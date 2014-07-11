@@ -10,13 +10,16 @@
       <tr><th>Sent Messages</th></tr>
       {{range .SentMessages}}
       <tr><td>Processes {{.From}} sent process {{.To}}: {{.Message}}
+  (lag: {{.Lag}})
       </td></tr>
       {{end}}
     </table>
     <table>
       <tr><th>Received Messages</th></tr>
       {{range .ReceivedMessages}}
-      <tr><td>{{.Message.Message}}</td></tr>
+      <tr><td>{{.Message.Message}} ({{.Message.To}} <-- {{.Message.From}}, successful: {{.Successful}}, lag: {{.Message.Lag}}, packet
+  loss: {{.Message.Packetloss}})</td></tr>
+
       {{end}}
     </table>
   </body>
