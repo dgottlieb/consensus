@@ -75,14 +75,11 @@
   <form id="split" method="POST" action="/network_split">
     <table class="colored_table">
       <tr>
-        <td>Left:</td><td><input name="left" type="text" value=""></td>
+        <td>Left:</td><td><input name="left" type="text" value="{{.left}}"></td>
       </tr>
       <tr>
-        <td>Right:</td><td><input name="right" type="text" value=""></td>
+        <td>Right:</td><td><input name="right" type="text" value="{{.right}}"></td>
       </tr>
-      {{if .split}}
-      {{.split}}
-      {{end}}
     </table>
     <button id="splitNetwork" style="float: left;">Split</button>
   </form>

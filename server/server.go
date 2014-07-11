@@ -11,23 +11,18 @@ import (
 	"time"
 )
 
-var leftIdxs []int
-var rightIdxs []int
-var split = false
+var validLeftStr string
+var validRightStr string
 
 func templateMap(processes []*Process) map[string]interface{} {
 	var mp map[string]interface{}
-	if split {
-		mp = map[string]interface{}{
-			"P":     processes,
-			"E":     elections,
-			"split": fmt.Sprintf("Split network. Left: %v Right: %v", leftIdxs, rightIdxs)}
-	} else {
-		mp = map[string]interface{}{
-			"P": processes,
-			"E": elections,
-		}
+	mp = map[string]interface{}{
+		"P":     processes,
+		"E":     elections,
+		"left":  validLeftStr,
+		"right": validRightStr,
 	}
+
 	return mp
 }
 
@@ -37,70 +32,53 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 		fmt.Printf("Error parsing template")
 	}
 	heatMap(processes)
-	mp := map[string]interface{}{
-		"P": processes,
-		"E": elections,
-	}
-	if err := tmpl.Execute(w, mp); err != nil {
+	if err := tmpl.Execute(w, templateMap(processes)); err != nil {
 		fmt.Printf(err.Error())
 		panic(err)
 	}
 }
 
 func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	if tmpl, err := template.ParseFiles("templates/root.html"); err != nil {
-		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
-	} else {
-		if err := r.ParseForm(); err != nil {
-			http.Error(
-				w,
-				fmt.Sprintf("Error parsing election form. Err: %v", err),
-				http.StatusInternalServerError,
-			)
-		}
-		for key := range r.Form { // should only iterate once
-			processId, _ := strconv.Atoi(key)
-			processes[processId].God <- &Force{Election: &True}
-			mp := templateMap(processes)
-			if err := tmpl.Execute(w, mp); err != nil {
-				fmt.Printf(err.Error())
-				panic(err)
-			}
-		}
+	if err := r.ParseForm(); err != nil {
+		http.Error(
+			w,
+			fmt.Sprintf("Error parsing election form. Err: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
 	}
+
+	for key := range r.Form { // should only iterate once
+		processId, _ := strconv.Atoi(key)
+		processes[processId].God <- &Force{Election: &True}
+	}
+
+	http.Redirect(w, r, "/", 302)
 }
 
 func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	if tmpl, err := template.ParseFiles("templates/root.html"); err != nil {
-		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
-	} else {
+	if err := r.ParseForm(); err != nil {
+		http.Error(
+			w,
+			fmt.Sprintf("Error parsing election form. Err: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
+	}
 
-		if err := r.ParseForm(); err != nil {
-			http.Error(
-				w,
-				fmt.Sprintf("Error parsing election form. Err: %v", err),
-				http.StatusInternalServerError,
-			)
-		}
-		var processId int
-		for key := range r.Form { // should only iterate once
-			processId, _ = strconv.Atoi(key)
-			for i := range processes[processId].NetworkState.Lag {
-				if i == processId {
-					continue
-				}
-				processes[processId].NetworkState.Lag[i] = time.Duration(10+rand.Int31n(100)) * time.Second
-				processes[i].NetworkState.Lag[processId] = time.Duration(10+rand.Int31n(100)) * time.Second
+	var processId int
+	for key := range r.Form { // should only iterate once
+		processId, _ = strconv.Atoi(key)
+		for i := range processes[processId].NetworkState.Lag {
+			if i == processId {
+				continue
 			}
-		}
-		heatMap(processes)
-		mp := templateMap(processes)
-
-		if err := tmpl.Execute(w, mp); err != nil {
-			fmt.Printf(err.Error())
-			panic(err)
+			processes[processId].NetworkState.Lag[i] = time.Duration(10+rand.Int31n(100)) * time.Second
+			processes[i].NetworkState.Lag[processId] = time.Duration(10+rand.Int31n(100)) * time.Second
 		}
 	}
+	heatMap(processes)
+	http.Redirect(w, r, "/", 302)
 }
 
 func heatMap(processes []*Process) {
@@ -115,78 +93,70 @@ func heatMap(processes []*Process) {
 }
 
 func NetworkSplitHandler(writer http.ResponseWriter, request *http.Request, processes []*Process) {
-	if tmpl, err := template.ParseFiles("templates/root.html"); err != nil {
-		http.Error(writer, "Error parsing lag template", http.StatusInternalServerError)
-	} else {
-		if err := request.ParseForm(); err != nil {
+	if err := request.ParseForm(); err != nil {
+		http.Error(
+			writer,
+			fmt.Sprintf("Error parsing split parameters. Err: %v", err),
+			http.StatusInternalServerError,
+		)
+		return
+	}
+
+	leftStr := request.FormValue("left")
+	rightStr := request.FormValue("right")
+
+	leftIdxStrs := strings.Split(leftStr, ",")
+	rightIdxStrs := strings.Split(rightStr, ",")
+
+	if len(leftIdxStrs)+len(rightIdxStrs) != len(processes) {
+		http.Error(
+			writer,
+			fmt.Sprintf("Expected each process id to be either on left or right. Left: %v Right %v",
+				leftStr, rightStr),
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	leftIdxs := make([]int, len(leftIdxStrs))
+	rightIdxs := make([]int, len(rightIdxStrs))
+
+	var err error
+	for idx, str := range leftIdxStrs {
+		leftIdxs[idx], err = strconv.Atoi(str)
+		if err != nil {
 			http.Error(
 				writer,
-				fmt.Sprintf("Error parsing split parameters. Err: %v", err),
-				http.StatusInternalServerError,
-			)
-		}
-
-		leftStr := request.FormValue("left")
-		rightStr := request.FormValue("right")
-
-		leftIdxStrs := strings.Split(leftStr, ",")
-		rightIdxStrs := strings.Split(rightStr, ",")
-
-		if len(leftIdxStrs)+len(rightIdxStrs) != len(processes) {
-			http.Error(
-				writer,
-				fmt.Sprintf("Expected each process id to be either on left or right. Left: %v Right %v",
-					leftStr, rightStr),
+				fmt.Sprintf("Bad left input. Received: `%v`", leftStr),
 				http.StatusBadRequest,
 			)
 			return
 		}
+	}
 
-		leftIdxs = make([]int, len(leftIdxStrs))
-		rightIdxs = make([]int, len(rightIdxStrs))
-
-		var err error
-		for idx, str := range leftIdxStrs {
-			leftIdxs[idx], err = strconv.Atoi(str)
-			if err != nil {
-				http.Error(
-					writer,
-					fmt.Sprintf("Bad left input. Received: `%v`", leftStr),
-					http.StatusBadRequest,
-				)
-				return
-			}
-		}
-
-		for idx, str := range rightIdxStrs {
-			rightIdxs[idx], err = strconv.Atoi(str)
-			if err != nil {
-				http.Error(
-					writer,
-					fmt.Sprintf("Bad right input. Received: `%v`", rightStr),
-					http.StatusBadRequest,
-				)
-				return
-			}
-		}
-
-		for _, left := range leftIdxs {
-			for _, right := range rightIdxs {
-				processes[left].NetworkState.Packetloss[right] = 100
-				processes[right].NetworkState.Packetloss[left] = 100
-			}
-		}
-		split = true
-		mp := map[string]interface{}{
-			"P":     processes,
-			"E":     elections,
-			"split": fmt.Sprintf("Split network. Left: %v Right: %v", leftIdxs, rightIdxs),
-		}
-		if err := tmpl.Execute(writer, mp); err != nil {
-			fmt.Printf(err.Error())
-			panic(err)
+	for idx, str := range rightIdxStrs {
+		rightIdxs[idx], err = strconv.Atoi(str)
+		if err != nil {
+			http.Error(
+				writer,
+				fmt.Sprintf("Bad right input. Received: `%v`", rightStr),
+				http.StatusBadRequest,
+			)
+			return
 		}
 	}
+
+	for _, left := range leftIdxs {
+		for _, right := range rightIdxs {
+			processes[left].NetworkState.Packetloss[right] = 100
+			processes[right].NetworkState.Packetloss[left] = 100
+		}
+	}
+
+	validLeftStr = leftStr
+	validRightStr = rightStr
+
+	http.Redirect(writer, request, "/", 302)
 }
 
 func HealNetworkHandler(writer http.ResponseWriter, request *http.Request, processes []*Process) {
@@ -198,8 +168,12 @@ func HealNetworkHandler(writer http.ResponseWriter, request *http.Request, proce
 			processes[right].NetworkState.Packetloss[left] = 0
 		}
 	}
+
+	validLeftStr = ""
+	validRightStr = ""
+
 	heatMap(processes)
-	fmt.Fprintf(writer, "Network healed")
+	http.Redirect(writer, request, "/", 302)
 }
 
 func DisplayElectionHistory(writer http.ResponseWriter, request *http.Request) {
