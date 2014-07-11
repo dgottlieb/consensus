@@ -1,9 +1,11 @@
 package server
 
 import (
+	"encoding/csv"
 	"fmt"
 	"math/rand"
 	"net/http"
+	"os"
 	"time"
 )
 
@@ -77,6 +79,23 @@ func (network *NetworkState) LagTo(peerId int) time.Duration {
 
 func (network *NetworkState) PacketlossTo(peerId int) int {
 	return network.Packetloss[peerId]
+}
+
+func toCsv(processes []*Process) {
+	file, err := os.Create("lag.csv")
+	if err != nil {
+		panic(err)
+	}
+	wr := csv.NewWriter(file)
+	wr.Write([]string{"process_1", "process_2", "process_3"})
+	for i := 0; i < len(processes); i++ {
+		var durations []string
+		for _, duration := range processes[i].NetworkState.Lag {
+			durations = append(durations, fmt.Sprintf("%f", duration.Seconds()))
+		}
+		wr.Write(durations)
+	}
+	wr.Flush()
 }
 
 func NewProcess(id int, mailbox chan *Message) *Process {
@@ -310,7 +329,7 @@ func Play() {
 	}()
 
 	go Mailbox(processes, mailbox)
-
+	go toCsv(processes)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		RootHandler(w, r, processes)
 	})
@@ -319,6 +338,11 @@ func Play() {
 	})
 	http.HandleFunc("/lag", func(w http.ResponseWriter, r *http.Request) {
 		LagHandler(w, r, processes)
+	})
+	http.HandleFunc("/img/lag.png", func(w http.ResponseWriter, r *http.Request) {
+		path, _ := os.Getwd()
+		lagPath := path + "/img/lag.png"
+		http.ServeFile(w, r, lagPath)
 	})
 	http.HandleFunc("/network_split", func(writer http.ResponseWriter, request *http.Request) {
 		NetworkSplitHandler(writer, request, processes)
