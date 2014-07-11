@@ -11,23 +11,18 @@ import (
 	"time"
 )
 
-var leftIdxs []int
-var rightIdxs []int
-var split = false
+var validLeftStr string
+var validRightStr string
 
 func templateMap(processes []*Process) map[string]interface{} {
 	var mp map[string]interface{}
-	if split {
-		mp = map[string]interface{}{
-			"P":     processes,
-			"E":     elections,
-			"split": fmt.Sprintf("Split network. Left: %v Right: %v", leftIdxs, rightIdxs)}
-	} else {
-		mp = map[string]interface{}{
-			"P": processes,
-			"E": elections,
-		}
+	mp = map[string]interface{}{
+		"P":     processes,
+		"E":     elections,
+		"left":  validLeftStr,
+		"right": validRightStr,
 	}
+
 	return mp
 }
 
@@ -37,11 +32,7 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 		fmt.Printf("Error parsing template")
 	}
 	heatMap(processes)
-	mp := map[string]interface{}{
-		"P": processes,
-		"E": elections,
-	}
-	if err := tmpl.Execute(w, mp); err != nil {
+	if err := tmpl.Execute(w, templateMap(processes)); err != nil {
 		fmt.Printf(err.Error())
 		panic(err)
 	}
@@ -127,8 +118,8 @@ func NetworkSplitHandler(writer http.ResponseWriter, request *http.Request, proc
 		return
 	}
 
-	leftIdxs = make([]int, len(leftIdxStrs))
-	rightIdxs = make([]int, len(rightIdxStrs))
+	leftIdxs := make([]int, len(leftIdxStrs))
+	rightIdxs := make([]int, len(rightIdxStrs))
 
 	var err error
 	for idx, str := range leftIdxStrs {
@@ -162,7 +153,9 @@ func NetworkSplitHandler(writer http.ResponseWriter, request *http.Request, proc
 		}
 	}
 
-	split = true
+	validLeftStr = leftStr
+	validRightStr = rightStr
+
 	http.Redirect(writer, request, "/", 302)
 }
 
@@ -175,6 +168,10 @@ func HealNetworkHandler(writer http.ResponseWriter, request *http.Request, proce
 			processes[right].NetworkState.Packetloss[left] = 0
 		}
 	}
+
+	validLeftStr = ""
+	validRightStr = ""
+
 	heatMap(processes)
 	http.Redirect(writer, request, "/", 302)
 }
