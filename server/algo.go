@@ -242,6 +242,7 @@ func (process *Process) ElectMe() {
 		process.Id, process.Election)
 
 	electionHistory := NewElection(process.Id, process.Election.NewFrequency)
+	process.Election.Id = electionHistory.Id
 	for peerId := 0; peerId < NumProcesses; peerId++ {
 		if process.Id == peerId {
 			continue
@@ -252,6 +253,7 @@ func (process *Process) ElectMe() {
 		message.ProcessEpoch = process.CurrentEpoch
 		message.Frequency = process.Election.NewFrequency
 		message.FrequencyEpoch = process.FrequencyEpoch
+		message.ElectionId = process.Election.Id
 		electionHistory.Sent(message)
 
 		process.Outbox <- message
