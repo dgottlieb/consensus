@@ -3,9 +3,13 @@ package server
 import (
 	"fmt"
 	"html/template"
+	"math/rand"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
@@ -40,10 +44,39 @@ func ElectionHandler(w http.ResponseWriter, r *http.Request, processes []*Proces
 }
 
 func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
-	if _, err := template.ParseFiles("templates/lag.html"); err != nil {
+	if tmpl, err := template.ParseFiles("templates/lag.html"); err != nil {
 		http.Error(w, "Error parsing lag template", http.StatusInternalServerError)
 	} else {
-		fmt.Fprintf(w, "Adding lag")
+
+		if err := r.ParseForm(); err != nil {
+			http.Error(
+				w,
+				fmt.Sprintf("Error parsing election form. Err: %v", err),
+				http.StatusInternalServerError,
+			)
+		}
+		var processId int
+		for key := range r.Form { // should only iterate once
+			processId, _ = strconv.Atoi(key)
+			for i := range processes[processId].NetworkState.Lag {
+				if i == processId {
+					continue
+				}
+				processes[processId].NetworkState.Lag[i] = time.Duration(10+rand.Int31n(100)) * time.Second
+			}
+			//fmt.Fprintf(w, "Adding lag to process %d", processId)
+			toCsv(processes)
+			cmd := exec.Command("Rscript", "heatmap.R")
+			if err := cmd.Start(); err != nil {
+				panic(err)
+			}
+			if err := cmd.Wait(); err != nil {
+				panic(err)
+			}
+			exec.Command("chmod", "755", "templates/lag.png").Run()
+		}
+		tmpl = tmpl.Funcs(template.FuncMap{"wd": os.Getwd})
+		tmpl.Execute(w, processId)
 	}
 }
 
