@@ -90,7 +90,7 @@ func toCsv(processes []*Process) {
 	wr := csv.NewWriter(file)
 	var header []string
 	for i := range processes {
-		header = append(header, fmt.Sprintf("process_%d", i))
+		header = append(header, fmt.Sprintf("process_%d", i+1))
 	}
 	wr.Write(header)
 	for i := 0; i < len(processes); i++ {

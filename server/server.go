@@ -62,6 +62,7 @@ func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 					continue
 				}
 				processes[processId].NetworkState.Lag[i] = time.Duration(10+rand.Int31n(100)) * time.Second
+				processes[i].NetworkState.Lag[processId] = time.Duration(10+rand.Int31n(100)) * time.Second
 			}
 			toCsv(processes)
 			cmd := exec.Command("Rscript", "heatmap.R")
