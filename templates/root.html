@@ -80,6 +80,9 @@
       <tr>
         <td>Right:</td><td><input name="right" type="text" value=""></td>
       </tr>
+      {{if .split}}
+      {{.split}}
+      {{end}}
     </table>
     <button id="splitNetwork" style="float: left;">Split</button>
   </form>
@@ -91,5 +94,8 @@
     <tr><td><a href="/history?id={{.Id}}">Election #{{.Id}}</a></td></tr>
     {{end}}
   </table>
+  <p align="center">
+    <img src="http://localhost:8080/img/lag.png" height="350" width="500" align="middle">
+  </p>
 </body>
 </html>

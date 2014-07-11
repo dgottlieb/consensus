@@ -9,7 +9,8 @@
     <table>
       <tr><th>Sent Messages</th></tr>
       {{range .SentMessages}}
-      <tr><td>{{.}}</td></tr>
+      <tr><td>Processes {{.From}} sent process {{.To}}: {{.Message}}
+      </td></tr>
       {{end}}
     </table>
     <table>
