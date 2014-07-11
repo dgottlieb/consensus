@@ -88,7 +88,11 @@ func toCsv(processes []*Process) {
 		panic(err)
 	}
 	wr := csv.NewWriter(file)
-	wr.Write([]string{"process_1", "process_2", "process_3"})
+	var header []string
+	for i := range processes {
+		header = append(header, fmt.Sprintf("process_%d", i))
+	}
+	wr.Write(header)
 	for i := 0; i < len(processes); i++ {
 		var durations []string
 		for _, duration := range processes[i].NetworkState.Lag {

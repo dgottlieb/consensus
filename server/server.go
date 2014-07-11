@@ -5,7 +5,6 @@ import (
 	"html/template"
 	"math/rand"
 	"net/http"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -64,7 +63,6 @@ func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 				}
 				processes[processId].NetworkState.Lag[i] = time.Duration(10+rand.Int31n(100)) * time.Second
 			}
-			//fmt.Fprintf(w, "Adding lag to process %d", processId)
 			toCsv(processes)
 			cmd := exec.Command("Rscript", "heatmap.R")
 			if err := cmd.Start(); err != nil {
@@ -73,9 +71,7 @@ func LagHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 			if err := cmd.Wait(); err != nil {
 				panic(err)
 			}
-			exec.Command("chmod", "755", "templates/lag.png").Run()
 		}
-		tmpl = tmpl.Funcs(template.FuncMap{"wd": os.Getwd})
 		tmpl.Execute(w, processId)
 	}
 }
