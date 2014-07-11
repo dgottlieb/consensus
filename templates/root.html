@@ -31,6 +31,13 @@
     }
     .elections_table TD {
       padding: 2px 5px;
+      text-align: center;
+    }
+    TD.green {
+      background-color: LawnGreen;
+    }
+    TD.red {
+      background-color: IndianRed;
     }
     input { margin: 0; }
   </style>
@@ -40,12 +47,16 @@
   <div>
     <table>
       <tr>
+        {{$CurrentFrequency:=.F}}
         {{range .P}}
         <td>
           <table class="process_table colored_table">
             <tr><td>Process Id:</td><td>{{.Id}}</td></tr>
             <tr><td>Current Epoch:</td><td>{{.CurrentEpoch}}</td></tr>
-            <tr><td>Frequency:</td><td>{{.Frequency}}</td></tr>
+            <tr>
+              <td>Frequency:</td>
+              <td class="{{.ClassColor $CurrentFrequency}}">{{.Frequency}}</td>
+            </tr>
             <tr><td>Frequency Epoch:</td><td>{{.FrequencyEpoch}}</td></tr>
             <tr><td>Last Vote Epoch:</td><td>{{.LastVoteEpoch}}</td></tr>
             <tr>
@@ -87,8 +98,14 @@
     <button id="healNetwork" style="margin-left: 1em;">Heal network</button>
   </form>
   <table class="colored_table elections_table">
+    <tr><th>Event</th><th>Elector</th><th>Successful</th><th>Frequency</th></tr>
     {{range .E}}
-    <tr><td><a href="/history?id={{.Id}}">Election #{{.Id}}</a></td></tr>
+    <tr>
+      <td><a href="/history?id={{.Id}}">Election #{{.Id}}</a></td>
+      <td>{{.ElectorId}}</td>
+      <td>{{.Successful}}</td>
+      <td>{{.RequestFrequency}}</td>
+    </tr>
     {{end}}
   </table>
   <p align="center">

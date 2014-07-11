@@ -15,12 +15,19 @@ var validLeftStr string
 var validRightStr string
 
 func templateMap(processes []*Process) map[string]interface{} {
-	var mp map[string]interface{}
-	mp = map[string]interface{}{
+	frequency := -1
+	for _, election := range elections {
+		if election.Successful {
+			frequency = election.RequestFrequency
+		}
+	}
+
+	mp := map[string]interface{}{
 		"P":     processes,
 		"E":     elections,
 		"left":  validLeftStr,
 		"right": validRightStr,
+		"F":     frequency,
 	}
 
 	return mp

@@ -105,8 +105,15 @@ func toCsv(processes []*Process) {
 
 func NewProcess(id int, mailbox chan *Message) *Process {
 	var nextElectionSeed time.Duration
-	if id > 0 {
-		nextElectionSeed = 10 * time.Second
+	if NumProcesses == 4 {
+		// Demo code
+		if id != 3 {
+			nextElectionSeed = 10 * time.Second
+		}
+	} else {
+		if id > 0 {
+			nextElectionSeed = 10 * time.Second
+		}
 	}
 
 	return &Process{
@@ -304,6 +311,14 @@ func (process *Process) UntilNextElection() string {
 
 	raw := fmt.Sprintf("%s", duration)
 	return truncateRegex.ReplaceAllString(raw, "$1")
+}
+
+func (process *Process) ClassColor(currentFrequency int) string {
+	if process.Frequency == currentFrequency {
+		return "green"
+	}
+
+	return "red"
 }
 
 func Mailbox(processes []*Process, mailbox chan *Message) {
