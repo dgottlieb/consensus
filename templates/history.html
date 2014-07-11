@@ -1,0 +1,22 @@
+<html>
+  <body>
+    <table>
+      <tr><td>Id</td><td>{{.Id}}</td></tr>
+      <tr><td>ElectorId</td><td>{{.ElectorId}}</td></tr>
+      <tr><td>RequestFrequency</td><td>{{.RequestFrequency}}</td></tr>
+      <tr><td>Successful</td><td>{{.Successful}}</td></tr>
+    </table>
+    <table>
+      <tr><th>Sent Messages</th></tr>
+      {{range .SentMessages}}
+      <tr><td>{{.}}</td></tr>
+      {{end}}
+    </table>
+    <table>
+      <tr><th>Received Messages</th></tr>
+      {{range .ReceivedMessages}}
+      <tr><td>{{.}}</td></tr>
+      {{end}}
+    </table>
+  </body>
+</html>

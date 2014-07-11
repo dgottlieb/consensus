@@ -217,7 +217,7 @@ func (process *Process) HandleMessage(message *Message) {
 		process.Election.NumVotes++
 		if process.Election.NumVotes*2 > process.Election.NumProcesses {
 			history.Successful = true
-			fmt.Println("New frequency elected.")
+			fmt.Println("New frequency elected. Frequency:", process.Election.NewFrequency)
 			process.Frequency = process.Election.NewFrequency
 			process.FrequencyEpoch = process.Election.FrequencyEpoch
 			process.PropagateFrequency()
@@ -261,6 +261,7 @@ func (process *Process) ElectMe() {
 		process.Id, process.Election)
 
 	electionHistory := NewElection(process.Id, process.Election.NewFrequency)
+	process.Election.Id = electionHistory.Id
 	for peerId := 0; peerId < NumProcesses; peerId++ {
 		if process.Id == peerId {
 			continue
@@ -271,6 +272,7 @@ func (process *Process) ElectMe() {
 		message.ProcessEpoch = process.CurrentEpoch
 		message.Frequency = process.Election.NewFrequency
 		message.FrequencyEpoch = process.FrequencyEpoch
+		message.ElectionId = process.Election.Id
 		electionHistory.Sent(message)
 
 		process.Outbox <- message
@@ -322,12 +324,6 @@ func Play() {
 		process.Spawn()
 	}
 
-	go func() {
-		time.Sleep(5 * time.Second)
-		fmt.Println("Forcing an election")
-		processes[1].God <- &Force{Election: &True}
-	}()
-
 	go Mailbox(processes, mailbox)
 	go toCsv(processes)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -347,5 +343,6 @@ func Play() {
 	http.HandleFunc("/network_split", func(writer http.ResponseWriter, request *http.Request) {
 		NetworkSplitHandler(writer, request, processes)
 	})
+	http.HandleFunc("/history", DisplayElectionHistory)
 	http.ListenAndServe(":8080", nil)
 }
