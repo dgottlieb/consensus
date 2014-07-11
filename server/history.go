@@ -13,9 +13,9 @@ type ElectionHistory struct {
 }
 
 type ReceivedMessage struct {
-	message      *Message
-	processState *ProcessState
-	successful   bool
+	Message      *Message
+	ProcessState *ProcessState
+	Successful   bool
 }
 
 type ProcessState struct {
