@@ -6,14 +6,15 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"time"
 )
 
 var True = true
 var False = false
 
-const NumProcesses = 3
-const NumMessages = 100
+const NumProcesses = 4
+const NumMessages = 250
 
 type Message struct {
 	Message        string
@@ -101,7 +102,7 @@ func toCsv(processes []*Process) {
 func NewProcess(id int, mailbox chan *Message) *Process {
 	var nextElectionSeed time.Duration
 	if id > 0 {
-		nextElectionSeed = time.Minute
+		nextElectionSeed = 10 * time.Second
 	}
 
 	return &Process{
@@ -289,6 +290,18 @@ func (process *Process) NewMessage(recipientId int) *Message {
 	}
 }
 
+var truncateRegex = regexp.MustCompile("(\\.\\d)(\\d*)")
+
+func (process *Process) UntilNextElection() string {
+	duration := process.NextElection.Sub(time.Now())
+	if int64(duration) < 0 {
+		return "0s"
+	}
+
+	raw := fmt.Sprintf("%s", duration)
+	return truncateRegex.ReplaceAllString(raw, "$1")
+}
+
 func Mailbox(processes []*Process, mailbox chan *Message) {
 	for messageNum := 0; messageNum < NumMessages; messageNum++ {
 		message := <-mailbox
@@ -342,6 +355,9 @@ func Play() {
 	})
 	http.HandleFunc("/network_split", func(writer http.ResponseWriter, request *http.Request) {
 		NetworkSplitHandler(writer, request, processes)
+	})
+	http.HandleFunc("/heal", func(writer http.ResponseWriter, request *http.Request) {
+		HealNetworkHandler(writer, request, processes)
 	})
 	http.HandleFunc("/history", DisplayElectionHistory)
 	http.ListenAndServe(":8080", nil)
