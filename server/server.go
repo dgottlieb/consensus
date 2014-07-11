@@ -13,7 +13,12 @@ func RootHandler(w http.ResponseWriter, r *http.Request, processes []*Process) {
 	if err != nil {
 		fmt.Printf("Error parsing template")
 	}
-	if err := tmpl.Execute(w, processes); err != nil {
+
+	mp := map[string]interface{}{
+		"P": processes,
+		"E": elections,
+	}
+	if err := tmpl.Execute(w, mp); err != nil {
 		fmt.Printf(err.Error())
 		panic(err)
 	}
@@ -101,6 +106,21 @@ func NetworkSplitHandler(writer http.ResponseWriter, request *http.Request, proc
 			processes[right].NetworkState.Packetloss[left] = 100
 		}
 	}
+
+	fmt.Fprintf(writer, "Split network. Left: %v Right: %v", leftIdxs, rightIdxs)
+}
+
+func HealNetworkHandler(writer http.ResponseWriter, request *http.Request, processes []*Process) {
+	for left := 0; left < len(processes); left++ {
+		for right := 0; right < len(processes); right++ {
+			processes[left].NetworkState.Lag[right] = 0
+			processes[left].NetworkState.Packetloss[right] = 0
+			processes[right].NetworkState.Lag[left] = 0
+			processes[right].NetworkState.Packetloss[left] = 0
+		}
+	}
+
+	fmt.Fprintf(writer, "Network healed")
 }
 
 func DisplayElectionHistory(writer http.ResponseWriter, request *http.Request) {

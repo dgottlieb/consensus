@@ -1,57 +1,94 @@
 <!DOCTYPE html>
 <head>
-  <title>Go Template Examples</title>
+  <title>Root Consensus</title>
   <script>
     window.addEventListener("load", function () {
-      var addLag = document.getElementById("lag");
-      addLag.addEventListener("click", function() {
-        var button = document.getElementById("submit");
-        button.submit();
-      });
-      var forceElection = document.getElementById("election");
-      forceElection.addEventListener("click", function() {
-        var button = document.getElementById("submit");
-        button.submit();
-      })
-      var splitNetwork = document.getElementById("split");
-      splitNetwork.addEventListener("click", function() {
-        var button = document.getElementById("splitNetwork");
-        button.submit();
-      })
+    var addLag = document.getElementById("lag");
+    addLag.addEventListener("click", function() {
+    var button = document.getElementById("submit");
+    button.submit();
     });
-    </script>
+    var forceElection = document.getElementById("election");
+    forceElection.addEventListener("click", function() {
+    var button = document.getElementById("submit");
+    button.submit();
+    })
+    var splitNetwork = document.getElementById("split");
+    splitNetwork.addEventListener("click", function() {
+    var button = document.getElementById("splitNetwork");
+    button.submit();
+    })
+    });
+  </script>
   <style>
-
+    BODY { background-color: azure; }
+    .colored_table TD {
+      background-color: bisque;
+      border: 1px solid black;
+    }
+    .process_table TD {
+      padding: 2px 5px;
+    }
+    .elections_table TD {
+      padding: 2px 5px;
+    }
     input { margin: 0; }
-    </style>
+  </style>
 </head>
 <body>
-<div>
-{{range .}}
-   Process Id: {{.Id}}<br>
-   Current Epoch: {{.CurrentEpoch}}<br>
-   Frequency: {{.Frequency}}<br>
-   Frequency Epoch: {{.FrequencyEpoch}}<br>
-   Last Vote Epoch: {{.LastVoteEpoch}}<br>
-   Next Election: {{.NextElection.Format "2006-01-02 3:04"}}<br>
-      <form id="lag" method="POST" action="/lag">
-    <button name="{{.Id}}" id="submit">Add lag</button>
-  </form>
-  <form id="election" method="POST" action="/election">
-    <button name="{{.Id}}" id="submit">Force election</button>
-  </form>
+  <div>
+    <table>
+      <tr>
+        {{range .P}}
+        <td>
+          <table class="process_table colored_table">
+            <tr><td>Process Id:</td><td>{{.Id}}</td></tr>
+            <tr><td>Current Epoch:</td><td>{{.CurrentEpoch}}</td></tr>
+            <tr><td>Frequency:</td><td>{{.Frequency}}</td></tr>
+            <tr><td>Frequency Epoch:</td><td>{{.FrequencyEpoch}}</td></tr>
+            <tr><td>Last Vote Epoch:</td><td>{{.LastVoteEpoch}}</td></tr>
+            <tr>
+              <td>Next Election:</td>
+              <td>{{ .UntilNextElection }}</td>
+            </tr>
+          </table>
+          <table>
+            <tr>
+              <td>
+                <form id="lag" method="POST" action="/lag">
+                  <button name="{{.Id}}" id="submit">Add lag</button>
+                </form>
+              </td>
+              <td>
+                <form id="election" method="POST" action="/election">
+                  <button name="{{.Id}}" id="submit">Force election</button>
+                </form>
+              </td>
+            </tr>
+          </table>
+        </td>
+        {{end}}
+      </tr>
+    </table>
   </div>
-{{end}}
   <form id="split" method="POST" action="/network_split">
-    <label for="left">Left:
-      <input name="left" type="text" value="">
-    </label>
-    <br>
-    <label for="right">Right:
-      <input name="right" type="text" value="">
-    </label>
-    <br>
-    <button id="splitNetwork">Split</button>
+    <table class="colored_table">
+      <tr>
+        <td>Left:</td><td><input name="left" type="text" value=""></td>
+      </tr>
+      <tr>
+        <td>Right:</td><td><input name="right" type="text" value=""></td>
+      </tr>
+    </table>
+    <button id="splitNetwork" style="float: left;">Split</button>
   </form>
+  <form id="heal" method="POST" action="/heal">
+    <button id="healNetwork" style="margin-left: 1em;">Heal network</button>
+  </form>
+  <table class="colored_table elections_table">
+    {{range .E}}
+    <tr><td><a href="/history?id={{.Id}}">Election #{{.Id}}</a></td></tr>
+    {{end}}
+  </table>
 </body>
 </html>
